@@ -81,7 +81,7 @@ class DataParser:
         Args:
             df: DataFrame to validate
         """
-        schema = self.dataset_config.schema.columns
+        schema = self.dataset_config.data_schema.columns
         
         for col_name, col_schema in schema.items():
             # Check required columns

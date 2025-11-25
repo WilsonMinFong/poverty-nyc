@@ -43,7 +43,7 @@ class DatasetConfig(BaseModel):
     """Complete dataset configuration."""
     dataset: DatasetConfigModel
     api: APIConfig
-    schema: DatasetSchemaConfig
+    data_schema: DatasetSchemaConfig = Field(alias="schema")
     validation: ValidationConfig = Field(default_factory=ValidationConfig)
 
 

@@ -79,7 +79,9 @@ async def get_poverty_by_zip():
         ) as geojson
     FROM census_zctas_2020 z
     JOIN census_acs_income_poverty c ON z.zip_code = c.zip_code
-    WHERE c.year = 2023;
+    WHERE c.year = 2023
+      AND c.poverty_rate IS NOT NULL
+      AND c.median_household_income IS NOT NULL;
     """)
     
     storage = DataStorage()

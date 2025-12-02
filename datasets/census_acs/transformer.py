@@ -36,6 +36,12 @@ class CensusACSTransformer(BaseDatasetTransformer):
         if "poverty_count" in df.columns and "poverty_universe" in df.columns:
             df["poverty_rate"] = (df["poverty_count"] / df["poverty_universe"]) * 100
             df["poverty_rate"] = df["poverty_rate"].round(2)
+
+        # Replace NaN with None to ensure NULL in database instead of NaN value
+        cols_to_clean = ["median_household_income", "poverty_rate", "poverty_count", "poverty_universe"]
+        for col in cols_to_clean:
+            if col in df.columns:
+                df[col] = df[col].replace({np.nan: None})
         
         # Add year
         df["year"] = self.census_config.year

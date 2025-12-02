@@ -10,14 +10,23 @@ function App() {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const [foodGapsData, setFoodGapsData] = useState(null);
+  const [povertyData, setPovertyData] = useState(null);
+  const [activeLayer, setActiveLayer] = useState('food-gap'); // 'food-gap' or 'poverty'
   const [hoverInfo, setHoverInfo] = useState(null);
 
   // Fetch data
   useEffect(() => {
+    // Fetch Food Gaps
     fetch('http://localhost:8000/api/food-gaps')
       .then(resp => resp.json())
       .then(json => setFoodGapsData(json))
       .catch(err => console.error('Failed to load food gaps data', err));
+
+    // Fetch Poverty Data
+    fetch('http://localhost:8000/api/poverty-by-zip')
+      .then(resp => resp.json())
+      .then(json => setPovertyData(json))
+      .catch(err => console.error('Failed to load poverty data', err));
   }, []);
 
   // Initialize map
@@ -35,28 +44,36 @@ function App() {
     mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
     mapRef.current.on('load', () => {
-      // Add empty source first
+      // Add sources
       mapRef.current.addSource('foodSupplyGaps', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] }
       });
 
-      // Add layers
+      mapRef.current.addSource('povertyData', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+
+      // --- Food Gap Layers ---
       mapRef.current.addLayer({
         id: 'nta-fills',
         type: 'fill',
         source: 'foodSupplyGaps',
+        layout: {
+          'visibility': 'visible'
+        },
         paint: {
           'fill-color': [
             'interpolate',
             ['linear'],
             ['get', 'food_insecure_pct'],
-            0.0, '#2cba00',  // Low insecurity (Good) -> Green
+            0.0, '#2cba00',
             0.1, '#a3ff00',
-            0.15, '#fff400', // Medium -> Yellow
+            0.15, '#fff400',
             0.2, '#ffa700',
-            0.3, '#ff0000',  // High insecurity (Bad) -> Red
-            0.4, '#8b0000'   // Very High -> Dark Red
+            0.3, '#ff0000',
+            0.4, '#8b0000'
           ],
           'fill-opacity': 0.7
         }
@@ -66,6 +83,46 @@ function App() {
         id: 'nta-borders',
         type: 'line',
         source: 'foodSupplyGaps',
+        layout: {
+          'visibility': 'visible'
+        },
+        paint: {
+          'line-color': '#000',
+          'line-width': 0.5
+        }
+      });
+
+      // --- Poverty Layers ---
+      mapRef.current.addLayer({
+        id: 'poverty-fills',
+        type: 'fill',
+        source: 'povertyData',
+        layout: {
+          'visibility': 'none'
+        },
+        paint: {
+          'fill-color': [
+            'interpolate',
+            ['linear'],
+            ['get', 'poverty_rate'],
+            0, '#2cba00',
+            10, '#a3ff00',
+            15, '#fff400',
+            20, '#ffa700',
+            30, '#ff0000',
+            40, '#8b0000'
+          ],
+          'fill-opacity': 0.7
+        }
+      });
+
+      mapRef.current.addLayer({
+        id: 'poverty-borders',
+        type: 'line',
+        source: 'povertyData',
+        layout: {
+          'visibility': 'none'
+        },
         paint: {
           'line-color': '#000',
           'line-width': 0.5
@@ -74,7 +131,7 @@ function App() {
     });
 
     // Hover effect
-    mapRef.current.on('mousemove', 'nta-fills', (e) => {
+    const onMouseMove = (e) => {
       if (e.features.length > 0) {
         const feature = e.features[0];
         setHoverInfo({
@@ -84,38 +141,55 @@ function App() {
         });
         mapRef.current.getCanvas().style.cursor = 'pointer';
       }
-    });
+    };
 
-    mapRef.current.on('mouseleave', 'nta-fills', () => {
+    const onMouseLeave = () => {
       setHoverInfo(null);
       mapRef.current.getCanvas().style.cursor = '';
-    });
+    };
+
+    mapRef.current.on('mousemove', 'nta-fills', onMouseMove);
+    mapRef.current.on('mouseleave', 'nta-fills', onMouseLeave);
+    mapRef.current.on('mousemove', 'poverty-fills', onMouseMove);
+    mapRef.current.on('mouseleave', 'poverty-fills', onMouseLeave);
 
     return () => {
       mapRef.current.remove();
     };
   }, []);
 
-  // Update data when available
+  // Update data sources
   useEffect(() => {
-    if (!foodGapsData || !mapRef.current) return;
+    if (!mapRef.current || !mapRef.current.isStyleLoaded()) return;
 
-    // Check if style is loaded before adding data
-    if (mapRef.current.isStyleLoaded()) {
-      const source = mapRef.current.getSource('foodSupplyGaps');
-      console.log(foodGapsData)
-      if (source) {
-        source.setData(foodGapsData);
-      }
-    } else {
-      mapRef.current.on('load', () => {
-        const source = mapRef.current.getSource('foodSupplyGaps');
-        if (source) {
-          source.setData(foodGapsData);
-        }
-      });
+    const foodSource = mapRef.current.getSource('foodSupplyGaps');
+    if (foodSource && foodGapsData) {
+      foodSource.setData(foodGapsData);
     }
-  }, [foodGapsData]);
+
+    const povertySource = mapRef.current.getSource('povertyData');
+    if (povertySource && povertyData) {
+      povertySource.setData(povertyData);
+    }
+  }, [foodGapsData, povertyData]);
+
+  // Toggle visibility
+  useEffect(() => {
+    if (!mapRef.current || !mapRef.current.isStyleLoaded()) return;
+
+    const visibilityFood = activeLayer === 'food-gap' ? 'visible' : 'none';
+    const visibilityPoverty = activeLayer === 'poverty' ? 'visible' : 'none';
+
+    if (mapRef.current.getLayer('nta-fills')) {
+      mapRef.current.setLayoutProperty('nta-fills', 'visibility', visibilityFood);
+      mapRef.current.setLayoutProperty('nta-borders', 'visibility', visibilityFood);
+    }
+
+    if (mapRef.current.getLayer('poverty-fills')) {
+      mapRef.current.setLayoutProperty('poverty-fills', 'visibility', visibilityPoverty);
+      mapRef.current.setLayoutProperty('poverty-borders', 'visibility', visibilityPoverty);
+    }
+  }, [activeLayer]);
 
   if (!MAPBOX_TOKEN) {
     return <div style={{ padding: 20 }}>Please set VITE_MAPBOX_TOKEN in your .env file</div>;
@@ -125,22 +199,70 @@ function App() {
     <div style={{ position: 'relative', width: '100vw', height: '100vh' }}>
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
+      {/* Layer Toggle */}
+      <div style={{
+        position: 'absolute',
+        top: 20,
+        left: 20,
+        background: 'white',
+        padding: 10,
+        borderRadius: 4,
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        zIndex: 1
+      }}>
+        <div style={{ marginBottom: 5, fontWeight: 'bold' }}>Select Layer:</div>
+        <label style={{ display: 'block', marginBottom: 5 }}>
+          <input
+            type="radio"
+            name="layer"
+            value="food-gap"
+            checked={activeLayer === 'food-gap'}
+            onChange={() => setActiveLayer('food-gap')}
+          /> Food Insecurity Gap
+        </label>
+        <label style={{ display: 'block' }}>
+          <input
+            type="radio"
+            name="layer"
+            value="poverty"
+            checked={activeLayer === 'poverty'}
+            onChange={() => setActiveLayer('poverty')}
+          /> Poverty Rate (by Zip)
+        </label>
+      </div>
+
       {hoverInfo && (
         <div className="tooltip" style={{ left: hoverInfo.x, top: hoverInfo.y }}>
-          <div><strong>{hoverInfo.feature.properties.nta_name}</strong></div>
-          <div>Insecurity: {(hoverInfo.feature.properties.food_insecure_pct * 100).toFixed(1)}%</div>
-          <div>Gap: {Math.round(hoverInfo.feature.properties.supply_gap_lbs).toLocaleString()} lbs</div>
+          {activeLayer === 'food-gap' ? (
+            <>
+              <div><strong>{hoverInfo.feature.properties.nta_name}</strong></div>
+              <div>Insecurity: {(hoverInfo.feature.properties.food_insecure_pct * 100).toFixed(1)}%</div>
+              <div>Gap: {Math.round(hoverInfo.feature.properties.supply_gap_lbs).toLocaleString()} lbs</div>
+            </>
+          ) : (
+            <>
+              <div><strong>Zip: {hoverInfo.feature.properties.zip_code}</strong></div>
+              <div>Poverty Rate: {hoverInfo.feature.properties.poverty_rate}%</div>
+              <div>Median Income: ${parseInt(hoverInfo.feature.properties.median_household_income).toLocaleString()}</div>
+            </>
+          )}
         </div>
       )}
 
       <div className="legend">
-        <h3>Food Insecurity %</h3>
-        <div className="legend-gradient"></div>
+        <h3>{activeLayer === 'food-gap' ? 'Food Insecurity %' : 'Poverty Rate %'}</h3>
+        <div className={`legend-gradient ${activeLayer}`}></div>
         <div className="legend-labels">
           <span>0%</span>
           <span>40%+</span>
         </div>
       </div>
+
+      <style>{`
+        .legend-gradient.poverty {
+          background: linear-gradient(to right, #2cba00, #a3ff00, #fff400, #ffa700, #ff0000, #8b0000);
+        }
+      `}</style>
     </div>
   );
 }

@@ -41,10 +41,28 @@ class DatasetSchemaConfig(BaseModel):
     columns: Dict[str, ColumnSchema]
 
 
+class CensusConfig(BaseModel):
+    """Census API configuration."""
+    year: int = 2021
+    dataset: str = "acs/acs5"
+    geography: str = "zip code tabulation area"
+    variables: Dict[str, str]
+    filters: Optional[Dict[str, Any]] = None
+
+
+class ShapefileConfig(BaseModel):
+    """Shapefile download configuration."""
+    url: str
+    filename: str
+
+
 class DatasetConfig(BaseModel):
     """Complete dataset configuration."""
     dataset: DatasetConfigModel
-    api: APIConfig
+    api: Optional[APIConfig] = None
+    census_config: Optional[CensusConfig] = None
+    shapefile_config: Optional[ShapefileConfig] = None
+    source_type: str = "socrata"  # "socrata", "census", or "shapefile_download"
     data_schema: DatasetSchemaConfig = Field(alias="schema")
     validation: ValidationConfig = Field(default_factory=ValidationConfig)
 

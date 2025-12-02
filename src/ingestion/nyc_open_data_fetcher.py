@@ -13,7 +13,7 @@ from src.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-class DataFetcher:
+class NYCOpenDataFetcher:
     """Fetches data from NYC Open Data SODA3 API."""
 
     def __init__(self, dataset_config: DatasetConfig):

@@ -54,3 +54,47 @@ async def get_food_gaps():
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         storage.close()
+
+@router.get("/poverty-by-zip")
+async def get_poverty_by_zip():
+    """Get poverty rates joined with ZCTA geometries."""
+    # Note: We use ST_AsGeoJSON(geometry) because the column name in census_zctas_2020 is 'geometry'
+    query = text("""
+    SELECT 
+        json_build_object(
+            'type', 'FeatureCollection',
+            'features', json_agg(
+                json_build_object(
+                    'type', 'Feature',
+                    'geometry', ST_AsGeoJSON(z.geometry)::json,
+                    'properties', json_build_object(
+                        'zip_code', z.zip_code,
+                        'poverty_rate', c.poverty_rate,
+                        'median_household_income', c.median_household_income,
+                        'poverty_count', c.poverty_count,
+                        'poverty_universe', c.poverty_universe
+                    )
+                )
+            )
+        ) as geojson
+    FROM census_zctas_2020 z
+    JOIN census_acs_income_poverty c ON z.zip_code = c.zip_code
+    WHERE c.year = 2023;
+    """)
+    
+    storage = DataStorage()
+    try:
+        engine = storage.get_engine()
+        with engine.connect() as conn:
+            result = conn.execute(query).scalar()
+        
+        # If result is None (no data), return empty FeatureCollection
+        if not result:
+            return {"type": "FeatureCollection", "features": []}
+            
+        return result
+    except Exception as e:
+        logger.error(f"Error fetching poverty data: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        storage.close()

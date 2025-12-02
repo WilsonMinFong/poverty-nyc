@@ -1,0 +1,34 @@
+dataset:
+  id: "census_zctas_2020"
+  name: "US Census 2020 ZCTAs"
+  description: "2020 Census 5-Digit ZIP Code Tabulation Areas (ZCTAs) TIGER/Line Shapefile"
+
+source_type: "shapefile_download"
+
+shapefile_config:
+  url: "https://www2.census.gov/geo/tiger/TIGER2020/ZCTA520/tl_2020_us_zcta520.zip"
+  filename: "tl_2020_us_zcta520.shp"
+
+schema:
+  table_name: "census_zctas_2020"
+  columns:
+    zip_code:
+      type: "VARCHAR(5)"
+      required: true
+      primary_key: true
+    geometry:
+      type: "GEOMETRY(MULTIPOLYGON, 4326)"
+      required: true
+    dataset_id:
+      type: "VARCHAR(20)"
+      required: true
+    ingestion_timestamp:
+      type: "TIMESTAMP"
+      default: "CURRENT_TIMESTAMP"
+  indexes:
+    - name: "idx_census_zctas_2020_geom"
+      columns: ["geometry"]
+
+validation:
+  allow_duplicates: false
+  unique_keys: ["zip_code"]

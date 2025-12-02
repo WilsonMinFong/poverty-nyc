@@ -17,6 +17,24 @@ datasets:
     config_path: "datasets/ntas_2020/config.yaml"
     transformer_class: "datasets.ntas_2020.transformer.Ntas2020Transformer"
 
+  census_acs:
+    name: "Census ACS 5-Year Income and Poverty"
+    dataset_id: "census_acs_5yr"
+    table_name: "census_acs_income_poverty"
+    enabled: true
+    update_frequency: "annually"
+    config_path: "datasets/census_acs/config.yaml"
+    transformer_class: "datasets.census_acs.transformer.CensusACSTransformer"
+
+  census_zctas_2020:
+    name: "US Census 2020 ZCTAs"
+    dataset_id: "census_zctas_2020"
+    table_name: "census_zctas_2020"
+    enabled: true
+    update_frequency: "static"
+    config_path: "datasets/census_zctas_2020/config.yaml"
+    transformer_class: "datasets.census_zctas_2020.transformer.CensusZctas2020Transformer"
+
   # Future datasets can be added here:
   # restaurant_inspections:
   #   name: "Restaurant Inspections"

@@ -1,0 +1,42 @@
+dataset:
+  id: "zillow_zori"
+  name: "Zillow Observed Rent Index (ZORI)"
+  description: "Smoothed measure of typical market rate rent by ZIP code from Zillow."
+
+api:
+  endpoint: "" # Not used for url_download
+  app_token: "" # Not used
+
+url_config:
+  url: "https://files.zillowstatic.com/research/public_csvs/zori/Zip_zori_uc_sfrcondomfr_sm_sa_month.csv"
+  filename: "Zip_zori_uc_sfrcondomfr_sm_sa_month.csv"
+
+source_type: "url_download"
+
+schema:
+  table_name: "zillow_zori"
+  columns:
+    zip_code:
+      type: "VARCHAR(5)"
+      description: "ZIP Code"
+      primary_key: true
+    rent_index:
+      type: "FLOAT"
+      description: "Zillow Observed Rent Index (Smoothed, Seasonally Adjusted)"
+    date:
+      type: "DATE"
+      description: "Date of the rent index value"
+    dataset_id:
+      type: "VARCHAR(50)"
+      description: "Dataset identifier"
+    ingestion_timestamp:
+      type: "TIMESTAMP"
+      description: "Time of ingestion"
+
+validation:
+  rules:
+    - column: "zip_code"
+      rule: "not_null"
+    - column: "rent_index"
+      rule: "min_value"
+      value: 0

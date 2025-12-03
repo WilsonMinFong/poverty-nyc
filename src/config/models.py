@@ -1,6 +1,6 @@
 """Pydantic models for configuration validation."""
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Literal
 from pydantic import BaseModel, Field
 
 
@@ -51,9 +51,15 @@ class CensusConfig(BaseModel):
 
 
 class ShapefileConfig(BaseModel):
-    """Shapefile download configuration."""
+    """Configuration for shapefile downloads."""
     url: str
     filename: str
+
+
+class UrlConfig(BaseModel):
+    """Configuration for direct URL downloads."""
+    url: str
+    filename: Optional[str] = None
 
 
 class DatasetConfig(BaseModel):
@@ -62,9 +68,10 @@ class DatasetConfig(BaseModel):
     api: Optional[APIConfig] = None
     census_config: Optional[CensusConfig] = None
     shapefile_config: Optional[ShapefileConfig] = None
-    source_type: str = "socrata"  # "socrata", "census", or "shapefile_download"
+    url_config: Optional[UrlConfig] = None
     data_schema: DatasetSchemaConfig = Field(alias="schema")
     validation: ValidationConfig = Field(default_factory=ValidationConfig)
+    source_type: Literal["socrata", "census_api", "shapefile_download", "url_download"] = "socrata"
 
 
 class DatasetRegistryEntry(BaseModel):

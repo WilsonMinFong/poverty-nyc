@@ -70,12 +70,10 @@ class CensusFetcher:
             zip_codes = active_filters["zip_codes"]
             return self._fetch_by_chunks(base_url, params, zip_codes)
         else:
-            # Fetch all for the geography (might be too large for ZCTA nationwide, but for state it's fine)
-            # For ZCTA, we usually need to filter by state or list. 
-            # If no filter provided, this might fail or timeout for nationwide ZCTA.
-            # But we assume we are filtering for NYC.
-            logger.warning("No zip code filter provided. Attempting to fetch all ZCTAs (this may fail).")
-            return self._make_request(base_url, params)
+            # Default to NYC ZIP codes if no filter provided
+            from src.constants import NYC_ZIP_CODES
+            logger.info("No zip code filter provided. Using default NYC ZIP codes.")
+            return self._fetch_by_chunks(base_url, params, NYC_ZIP_CODES)
 
     def _fetch_by_chunks(self, base_url: str, base_params: Dict[str, str], zip_codes: List[str]) -> pd.DataFrame:
         """

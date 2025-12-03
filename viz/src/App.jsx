@@ -11,51 +11,54 @@ function App() {
   const mapRef = useRef(null);
   const [foodGapsData, setFoodGapsData] = useState(null);
   const [povertyData, setPovertyData] = useState(null);
-  const [activeLayer, setActiveLayer] = useState('food-gap'); // 'food-gap' or 'poverty'
+  const [rentData, setRentData] = useState(null);
   const [hoverInfo, setHoverInfo] = useState(null);
+  const [activeLayer, setActiveLayer] = useState('food-gap'); // 'food-gap', 'poverty', or 'rent'
 
   // Fetch data
   useEffect(() => {
-    // Fetch Food Gaps
+    // Fetch Food Gap Data
     fetch('http://localhost:8000/api/food-gaps')
-      .then(resp => resp.json())
-      .then(json => setFoodGapsData(json))
-      .catch(err => console.error('Failed to load food gaps data', err));
+      .then(res => res.json())
+      .then(data => setFoodGapsData(data))
+      .catch(err => console.error('Error fetching food gaps:', err));
 
     // Fetch Poverty Data
     fetch('http://localhost:8000/api/poverty-by-zip')
-      .then(resp => resp.json())
-      .then(json => setPovertyData(json))
-      .catch(err => console.error('Failed to load poverty data', err));
+      .then(res => res.json())
+      .then(data => setPovertyData(data))
+      .catch(err => console.error('Error fetching poverty data:', err));
+
+    // Fetch Rent Data
+    fetch('http://localhost:8000/api/rent-by-zip')
+      .then(res => res.json())
+      .then(data => setRentData(data))
+      .catch(err => console.error('Error fetching rent data:', err));
   }, []);
 
   // Initialize map
   useEffect(() => {
     if (!MAPBOX_TOKEN) return;
+    if (!mapContainerRef.current) return;
 
     mapboxgl.accessToken = MAPBOX_TOKEN;
 
     mapRef.current = new mapboxgl.Map({
       container: mapContainerRef.current,
+      style: 'mapbox://styles/mapbox/light-v11',
       center: INITIAL_CENTER,
-      zoom: INITIAL_ZOOM,
+      zoom: INITIAL_ZOOM
     });
 
     mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
     mapRef.current.on('load', () => {
-      // Add sources
+      // --- Food Gap Source & Layers ---
       mapRef.current.addSource('foodSupplyGaps', {
         type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] }
+        data: foodGapsData || { type: 'FeatureCollection', features: [] }
       });
 
-      mapRef.current.addSource('povertyData', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] }
-      });
-
-      // --- Food Gap Layers ---
       mapRef.current.addLayer({
         id: 'nta-fills',
         type: 'fill',
@@ -87,19 +90,22 @@ function App() {
           'visibility': 'visible'
         },
         paint: {
-          'line-color': '#000',
-          'line-width': 0.5
+          'line-color': '#000000',
+          'line-width': 1
         }
       });
 
-      // --- Poverty Layers ---
+      // --- Poverty Source & Layers ---
+      mapRef.current.addSource('povertyData', {
+        type: 'geojson',
+        data: povertyData || { type: 'FeatureCollection', features: [] }
+      });
+
       mapRef.current.addLayer({
         id: 'poverty-fills',
         type: 'fill',
         source: 'povertyData',
-        layout: {
-          'visibility': 'none'
-        },
+        layout: { visibility: 'none' },
         paint: {
           'fill-color': [
             'interpolate',
@@ -120,42 +126,74 @@ function App() {
         id: 'poverty-borders',
         type: 'line',
         source: 'povertyData',
-        layout: {
-          'visibility': 'none'
-        },
+        layout: { visibility: 'none' },
         paint: {
-          'line-color': '#000',
-          'line-width': 0.5
+          'line-color': '#000000',
+          'line-width': 1
         }
+      });
+
+      // --- Rent Source & Layers ---
+      mapRef.current.addSource('rentData', {
+        type: 'geojson',
+        data: rentData || { type: 'FeatureCollection', features: [] }
+      });
+
+      mapRef.current.addLayer({
+        id: 'rent-fills',
+        type: 'fill',
+        source: 'rentData',
+        layout: { visibility: 'none' },
+        paint: {
+          'fill-color': [
+            'interpolate',
+            ['linear'],
+            ['get', 'rent_index'],
+            1500, '#2cba00',
+            2500, '#a3ff00',
+            3500, '#fff400',
+            4500, '#ffa700',
+            5500, '#ff0000',
+            6500, '#8b0000'
+          ],
+          'fill-opacity': 0.7
+        }
+      });
+
+      mapRef.current.addLayer({
+        id: 'rent-borders',
+        type: 'line',
+        source: 'rentData',
+        layout: { visibility: 'none' },
+        paint: {
+          'line-color': '#000000',
+          'line-width': 1
+        }
+      });
+
+      // --- Interactions ---
+      const layers = ['nta-fills', 'poverty-fills', 'rent-fills'];
+
+      layers.forEach(layer => {
+        mapRef.current.on('mousemove', layer, (e) => {
+          if (e.features.length > 0) {
+            mapRef.current.getCanvas().style.cursor = 'pointer';
+            setHoverInfo({
+              feature: e.features[0],
+              x: e.point.x,
+              y: e.point.y
+            });
+          }
+        });
+
+        mapRef.current.on('mouseleave', layer, () => {
+          mapRef.current.getCanvas().style.cursor = '';
+          setHoverInfo(null);
+        });
       });
     });
 
-    // Hover effect
-    const onMouseMove = (e) => {
-      if (e.features.length > 0) {
-        const feature = e.features[0];
-        setHoverInfo({
-          feature: feature,
-          x: e.point.x,
-          y: e.point.y
-        });
-        mapRef.current.getCanvas().style.cursor = 'pointer';
-      }
-    };
-
-    const onMouseLeave = () => {
-      setHoverInfo(null);
-      mapRef.current.getCanvas().style.cursor = '';
-    };
-
-    mapRef.current.on('mousemove', 'nta-fills', onMouseMove);
-    mapRef.current.on('mouseleave', 'nta-fills', onMouseLeave);
-    mapRef.current.on('mousemove', 'poverty-fills', onMouseMove);
-    mapRef.current.on('mouseleave', 'poverty-fills', onMouseLeave);
-
-    return () => {
-      mapRef.current.remove();
-    };
+    return () => mapRef.current.remove();
   }, []);
 
   // Update data sources
@@ -171,20 +209,43 @@ function App() {
     if (povertySource && povertyData) {
       povertySource.setData(povertyData);
     }
-  }, [foodGapsData, povertyData]);
 
-  // Get current data year
-  const getDataYear = () => {
+    const rentSource = mapRef.current.getSource('rentData');
+    if (rentSource && rentData) {
+      rentSource.setData(rentData);
+    }
+  }, [foodGapsData, povertyData, rentData]);
+
+  // Get current data year/date
+  const getDataLabel = () => {
     if (activeLayer === 'food-gap' && foodGapsData?.features?.length > 0) {
-      return foodGapsData.features[0].properties.year;
+      return `Data: ${foodGapsData.features[0].properties.year}`;
     }
     if (activeLayer === 'poverty' && povertyData?.features?.length > 0) {
-      return povertyData.features[0].properties.year;
+      return `Data: ${povertyData.features[0].properties.year}`;
+    }
+    if (activeLayer === 'rent' && rentData?.features?.length > 0) {
+      const dateStr = rentData.features[0].properties.date;
+      if (dateStr) {
+        const date = new Date(dateStr);
+        return `Data: ${date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
+      }
+      return `Data: ${rentData.features[0].properties.year}`;
     }
     return null;
   };
 
-  const dataYear = getDataYear();
+  const dataLabel = getDataLabel();
+
+  // Get source label
+  const getSourceLabel = () => {
+    if (activeLayer === 'food-gap') return 'Source: NYC Open Data';
+    if (activeLayer === 'poverty') return 'Source: US Census ACS';
+    if (activeLayer === 'rent') return 'Source: Zillow';
+    return null;
+  };
+
+  const sourceLabel = getSourceLabel();
 
   // Toggle visibility
   useEffect(() => {
@@ -192,6 +253,7 @@ function App() {
 
     const visibilityFood = activeLayer === 'food-gap' ? 'visible' : 'none';
     const visibilityPoverty = activeLayer === 'poverty' ? 'visible' : 'none';
+    const visibilityRent = activeLayer === 'rent' ? 'visible' : 'none';
 
     if (mapRef.current.getLayer('nta-fills')) {
       mapRef.current.setLayoutProperty('nta-fills', 'visibility', visibilityFood);
@@ -201,6 +263,11 @@ function App() {
     if (mapRef.current.getLayer('poverty-fills')) {
       mapRef.current.setLayoutProperty('poverty-fills', 'visibility', visibilityPoverty);
       mapRef.current.setLayoutProperty('poverty-borders', 'visibility', visibilityPoverty);
+    }
+
+    if (mapRef.current.getLayer('rent-fills')) {
+      mapRef.current.setLayoutProperty('rent-fills', 'visibility', visibilityRent);
+      mapRef.current.setLayoutProperty('rent-borders', 'visibility', visibilityRent);
     }
   }, [activeLayer]);
 
@@ -231,9 +298,9 @@ function App() {
             value="food-gap"
             checked={activeLayer === 'food-gap'}
             onChange={() => setActiveLayer('food-gap')}
-          /> Food Insecurity Gap
+          /> Food Insecurity Gap (by NTA)
         </label>
-        <label style={{ display: 'block' }}>
+        <label style={{ display: 'block', marginBottom: 5 }}>
           <input
             type="radio"
             name="layer"
@@ -241,6 +308,15 @@ function App() {
             checked={activeLayer === 'poverty'}
             onChange={() => setActiveLayer('poverty')}
           /> Poverty Rate (by Zip)
+        </label>
+        <label style={{ display: 'block' }}>
+          <input
+            type="radio"
+            name="layer"
+            value="rent"
+            checked={activeLayer === 'rent'}
+            onChange={() => setActiveLayer('rent')}
+          /> Market Rent (by Zip)
         </label>
       </div>
 
@@ -252,30 +328,53 @@ function App() {
               <div>Insecurity: {(hoverInfo.feature.properties.food_insecure_pct * 100).toFixed(1)}%</div>
               <div>Gap: {Math.round(hoverInfo.feature.properties.supply_gap_lbs).toLocaleString()} lbs</div>
             </>
-          ) : (
+          ) : activeLayer === 'poverty' ? (
             <>
               <div><strong>Zip: {hoverInfo.feature.properties.zip_code}</strong></div>
               <div>Poverty Rate: {hoverInfo.feature.properties.poverty_rate}%</div>
               <div>Median Income: ${parseInt(hoverInfo.feature.properties.median_household_income).toLocaleString()}</div>
+            </>
+          ) : (
+            <>
+              <div><strong>Zip: {hoverInfo.feature.properties.zip_code}</strong></div>
+              <div>Market Rent: ${Math.round(hoverInfo.feature.properties.rent_index).toLocaleString()}</div>
             </>
           )}
         </div>
       )}
 
       <div className="legend">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <h3>{activeLayer === 'food-gap' ? 'Food Insecurity %' : 'Poverty Rate %'}</h3>
-          {dataYear && <span style={{ fontSize: '0.8em', color: '#666' }}>Data: {dataYear}</span>}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
+          <h3 style={{ margin: 0 }}>
+            {activeLayer === 'food-gap' ? 'Food Insecurity %' :
+              activeLayer === 'poverty' ? 'Poverty Rate %' : 'Market Rent'}
+          </h3>
+        </div>
+        <div style={{ fontSize: '0.8em', color: '#666', marginBottom: 5 }}>
+          {sourceLabel && <div>{sourceLabel}</div>}
+          {dataLabel && <div>{dataLabel}</div>}
         </div>
         <div className={`legend-gradient ${activeLayer}`}></div>
         <div className="legend-labels">
-          <span>0%</span>
-          <span>40%+</span>
+          {activeLayer === 'rent' ? (
+            <>
+              <span>$1.5k</span>
+              <span>$6.5k+</span>
+            </>
+          ) : (
+            <>
+              <span>0%</span>
+              <span>40%+</span>
+            </>
+          )}
         </div>
       </div>
 
       <style>{`
         .legend-gradient.poverty {
+          background: linear-gradient(to right, #2cba00, #a3ff00, #fff400, #ffa700, #ff0000, #8b0000);
+        }
+        .legend-gradient.rent {
           background: linear-gradient(to right, #2cba00, #a3ff00, #fff400, #ffa700, #ff0000, #8b0000);
         }
       `}</style>

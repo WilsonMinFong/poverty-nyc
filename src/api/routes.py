@@ -102,3 +102,40 @@ async def get_poverty_by_zip():
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         storage.close()
+
+@router.get("/rent-by-zip")
+async def get_rent_by_zip():
+    """Get Zillow market-rate rents joined with ZCTA geometries."""
+    query = text("""
+    SELECT 
+        json_build_object(
+            'type', 'FeatureCollection',
+            'features', json_agg(
+                json_build_object(
+                    'type', 'Feature',
+                    'geometry', ST_AsGeoJSON(z.geometry)::json,
+                    'properties', json_build_object(
+                        'zip_code', z.zip_code,
+                        'rent_index', r.rent_index,
+                        'date', r.date,
+                        'year', EXTRACT(YEAR FROM r.date)
+                    )
+                )
+            )
+        ) as geojson
+    FROM census_zctas_2020 z
+    JOIN zillow_zori r ON z.zip_code = r.zip_code
+    WHERE r.rent_index IS NOT NULL;
+    """)
+    
+    storage = DataStorage()
+    try:
+        engine = storage.get_engine()
+        with engine.connect() as conn:
+            result = conn.execute(query).scalar()
+        return result
+    except Exception as e:
+        logger.error(f"Error fetching rent data: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        storage.close()

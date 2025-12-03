@@ -14,6 +14,7 @@ from src.config.settings import settings
 from src.ingestion.nyc_open_data_fetcher import NYCOpenDataFetcher
 from src.ingestion.census_fetcher import CensusFetcher
 from src.ingestion.shapefile_fetcher import ShapefileFetcher
+from src.ingestion.url_fetcher import UrlFetcher
 from src.ingestion.parser import DataParser
 from src.ingestion.storage import DataStorage
 from src.utils.logger import setup_logger
@@ -39,13 +40,14 @@ def ingest_dataset(
         dataset_key: Dataset key from registry
         source: Data source ('api' or 'csv')
         filters: Optional filter parameters
+        limit: Optional limit for records fetched
         force: Force re-download even if data exists
         dry_run: Preview without storing
     """
-    logger.info(f"Starting ingestion for dataset: {dataset_key}")
-    logger.info(f"Source: {source}, Filters: {filters}, Dry run: {dry_run}")
-
     try:
+        logger.info(f"Starting ingestion for dataset: {dataset_key}")
+        logger.info(f"Source: {source}, Filters: {filters}, Dry run: {dry_run}")
+
         # Load dataset configuration
         registry = settings.get_registry()
         dataset_entry = registry.get_dataset(dataset_key)
@@ -60,10 +62,12 @@ def ingest_dataset(
         dataset_config = settings.get_dataset_config(dataset_key)
 
         # Initialize components
-        if dataset_config.source_type == 'census':
+        if dataset_config.source_type == 'census_api':
             fetcher = CensusFetcher(dataset_config)
         elif dataset_config.source_type == 'shapefile_download':
             fetcher = ShapefileFetcher(dataset_config)
+        elif dataset_config.source_type == 'url_download':
+            fetcher = UrlFetcher(dataset_config)
         else:
             fetcher = NYCOpenDataFetcher(dataset_config)
 
@@ -77,6 +81,8 @@ def ingest_dataset(
 
         if source == 'api':
             if dataset_config.source_type == 'shapefile_download':
+                df_raw = fetcher.fetch_data(force=force)
+            elif dataset_config.source_type == 'url_download':
                 df_raw = fetcher.fetch_data(force=force)
             else:
                 df_raw = fetcher.fetch_from_api(filters=filters)

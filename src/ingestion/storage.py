@@ -88,6 +88,8 @@ class DataStorage:
             'VARCHAR': String,
             'TEXT': String,
             'NUMERIC': Numeric,
+            'FLOAT': Numeric,  # Map FLOAT to Numeric
+            'DATE': DateTime,  # Map DATE to DateTime
             'TIMESTAMP': DateTime,
             'SERIAL': Integer,  # SQLAlchemy handles auto-increment for Integer primary keys
             'GEOMETRY': Geometry,

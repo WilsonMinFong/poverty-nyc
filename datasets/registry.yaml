@@ -35,6 +35,14 @@ datasets:
     config_path: "datasets/census_zctas_2020/config.yaml"
     transformer_class: "datasets.census_zctas_2020.transformer.CensusZctas2020Transformer"
 
+  zillow_zori:
+    name: "Zillow Observed Rent Index (ZORI)"
+    dataset_id: "zillow_zori"
+    table_name: "zillow_zori"
+    update_frequency: "monthly"
+    config_path: "datasets/zillow_zori/config.yaml"
+    transformer_class: "datasets.zillow_zori.transformer.ZillowZoriTransformer"
+
   # Future datasets can be added here:
   # restaurant_inspections:
   #   name: "Restaurant Inspections"

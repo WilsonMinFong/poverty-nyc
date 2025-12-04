@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import ScrollyTelling from './components/ScrollyTelling';
+import ComparisonTool from './components/ComparisonTool';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const INITIAL_CENTER = [-74.006, 40.7128];
@@ -73,6 +74,9 @@ function App() {
   const [isStoryMode, setIsStoryMode] = useState(false);
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
   const [storyData, setStoryData] = useState(null);
+
+  // Comparison Tool State
+  const [isComparisonMode, setIsComparisonMode] = useState(false);
 
   // Fetch data
   useEffect(() => {
@@ -436,12 +440,61 @@ function App() {
                 border: 'none',
                 borderRadius: '4px',
                 cursor: 'pointer',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
+                marginBottom: '10px'
               }}
             >
               Start Story Mode 📖
             </button>
+
+            <button
+              onClick={() => setIsComparisonMode(true)}
+              style={{
+                width: '100%',
+                padding: '8px',
+                background: '#3498db',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              Compare Yourself 📊
+            </button>
           </div>
+
+          {isComparisonMode && (
+            <ComparisonTool
+              povertyData={povertyData}
+              rentData={rentData}
+              onExit={() => setIsComparisonMode(false)}
+              onVisualize={(zipCode) => {
+                const feature = povertyData?.features.find(f => f.properties.zip_code === zipCode);
+                if (feature) {
+                  const bounds = new mapboxgl.LngLatBounds();
+
+                  const processCoords = (coords) => {
+                    if (typeof coords[0] === 'number') {
+                      bounds.extend(coords);
+                    } else {
+                      coords.forEach(processCoords);
+                    }
+                  };
+
+                  if (feature.geometry.type === 'Polygon') {
+                    feature.geometry.coordinates.forEach(ring => ring.forEach(coord => bounds.extend(coord)));
+                  } else if (feature.geometry.type === 'MultiPolygon') {
+                    feature.geometry.coordinates.forEach(poly => poly.forEach(ring => ring.forEach(coord => bounds.extend(coord))));
+                  }
+
+                  if (!bounds.isEmpty()) {
+                    mapRef.current.fitBounds(bounds, { padding: 50, duration: 2000 });
+                  }
+                }
+              }}
+            />
+          )}
 
           {hoverInfo && (
             <div className="tooltip" style={{ left: hoverInfo.x, top: hoverInfo.y }}>

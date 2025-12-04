@@ -74,7 +74,22 @@ const Dashboard = ({ data }) => {
             <MetricCard
                 label="Rent Burden"
                 value={`${rent_burden}%`}
-                subtext="of income goes to rent"
+                subtext={
+                    <div>
+                        of income goes to rent
+                        <div style={{
+                            marginTop: '8px',
+                            fontSize: '0.85em',
+                            fontStyle: 'italic',
+                            color: '#666',
+                            borderTop: '1px solid #eee',
+                            paddingTop: '4px'
+                        }}>
+                            *Compares current (2025) market rent (new leases) to median household income (2023).
+                            Burden may be overstated due to income data lag.
+                        </div>
+                    </div>
+                }
                 color={rent_burden > 30 ? '#d32f2f' : '#388e3c'}
             />
 

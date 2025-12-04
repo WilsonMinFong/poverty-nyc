@@ -40,7 +40,7 @@ const ScrollyTelling = ({ chapters, onChapterChange, currentData, onExit }) => {
             </div>
 
             {/* Scrolling Narrative Steps */}
-            <div style={{ paddingBottom: '50vh', marginTop: '50vh' }}>
+            <div style={{ paddingBottom: '50vh', marginTop: '0vh' }}>
                 <Scrollama onStepEnter={onStepEnter} offset={0.5}>
                     {chapters.map((chapter, index) => (
                         <Step data={index} key={index}>

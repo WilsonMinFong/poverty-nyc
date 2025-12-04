@@ -151,7 +151,7 @@ function App() {
         type: 'fill',
         source: 'foodSupplyGaps',
         layout: {
-          'visibility': 'none'
+          'visibility': activeLayer === 'food-gap' ? 'visible' : 'none'
         },
         paint: {
           'fill-color': [
@@ -174,7 +174,7 @@ function App() {
         type: 'line',
         source: 'foodSupplyGaps',
         layout: {
-          'visibility': 'none'
+          'visibility': activeLayer === 'food-gap' ? 'visible' : 'none'
         },
         paint: {
           'line-color': '#000000',
@@ -192,7 +192,7 @@ function App() {
         id: 'poverty-fills',
         type: 'fill',
         source: 'povertyData',
-        layout: { visibility: 'none' },
+        layout: { visibility: activeLayer === 'poverty' ? 'visible' : 'none' },
         paint: {
           'fill-color': [
             'interpolate',
@@ -213,7 +213,7 @@ function App() {
         id: 'poverty-borders',
         type: 'line',
         source: 'povertyData',
-        layout: { visibility: 'none' },
+        layout: { visibility: activeLayer === 'poverty' ? 'visible' : 'none' },
         paint: {
           'line-color': '#000000',
           'line-width': 1
@@ -230,7 +230,7 @@ function App() {
         id: 'rent-fills',
         type: 'fill',
         source: 'rentData',
-        layout: { visibility: 'none' },
+        layout: { visibility: activeLayer === 'rent' ? 'visible' : 'none' },
         paint: {
           'fill-color': [
             'interpolate',
@@ -251,7 +251,7 @@ function App() {
         id: 'rent-borders',
         type: 'line',
         source: 'rentData',
-        layout: { visibility: 'none' },
+        layout: { visibility: activeLayer === 'rent' ? 'visible' : 'none' },
         paint: {
           'line-color': '#000000',
           'line-width': 1

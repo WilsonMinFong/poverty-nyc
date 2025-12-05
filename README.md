@@ -102,6 +102,32 @@ nyc-open-data-pipeline/
 4. Create a new application token
 5. Copy the token to your `.env` file
 
+## Running the Web Application
+
+The project consists of a FastAPI backend and a React/Vite frontend. You will need two terminal windows to run them both.
+
+### 1. Start the Backend API
+Run this from the root `nyc-open-data-pipeline` directory:
+
+```bash
+# Activate virtual environment if not already active
+source .venv/bin/activate
+
+# Start the server
+uvicorn src.api.main:app --reload
+```
+The API will be available at `http://localhost:8000`. API docs are at `http://localhost:8000/docs`.
+
+### 2. Start the Frontend
+Run this from the `viz` directory:
+
+```bash
+cd viz
+npm install # Only needed first time
+npm run dev
+```
+The application will be available at `http://localhost:5173`.
+
 ## Usage
 
 ### Ingest a Single Dataset

@@ -19,5 +19,7 @@ services:
         sync: false
       - key: ALLOWED_ORIGINS
         sync: false
+      - key: POSTGRES_SSLMODE
+        value: "require"
       - key: LOG_LEVEL
         value: "INFO"

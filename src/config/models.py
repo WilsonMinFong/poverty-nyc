@@ -109,10 +109,14 @@ class DatabaseConfig(BaseModel):
     database: str
     user: str
     password: str
+    sslmode: Optional[str] = None  # e.g., "require" for Supabase/cloud connections
     
     def get_connection_string(self) -> str:
         """Get PostgreSQL connection string."""
-        return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+        base = f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+        if self.sslmode:
+            return f"{base}?sslmode={self.sslmode}"
+        return base
 
 
 class AppConfig(BaseModel):

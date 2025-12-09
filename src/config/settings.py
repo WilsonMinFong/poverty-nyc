@@ -30,7 +30,8 @@ class Settings:
                 port=int(os.getenv('POSTGRES_PORT', '5432')),
                 database=os.getenv('POSTGRES_DB', 'poverty_nyc'),
                 user=os.getenv('POSTGRES_USER', ''),
-                password=os.getenv('POSTGRES_PASSWORD', '')
+                password=os.getenv('POSTGRES_PASSWORD', ''),
+                sslmode=os.getenv('POSTGRES_SSLMODE')  # e.g., "require" for Supabase
             ),
             raw_data_path=os.getenv('RAW_DATA_PATH', 'data/raw'),
             processed_data_path=os.getenv('PROCESSED_DATA_PATH', 'data/processed'),

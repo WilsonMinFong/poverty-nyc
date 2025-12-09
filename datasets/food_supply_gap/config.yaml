@@ -8,6 +8,7 @@ api:
   timeout: 30
   
 schema:
+  table_name: "food_supply_gaps"
   columns:
     year:
       type: "integer"

@@ -67,14 +67,9 @@ class FoodSupplyGapTransformer(BaseDatasetTransformer):
                     print(f"Warning: Found {invalid_pct.sum()} invalid values in {pct_col}")
                     df.loc[invalid_pct, pct_col] = np.nan
         
-        # Convert NaN to None for integer columns (PostgreSQL compatibility)
-        # rank is stored as INTEGER in database but may have NaN values
-        if 'rank' in df.columns:
-            df['rank'] = df['rank'].replace({np.nan: None})
-        
-        # Also ensure year column doesn't have NaN (though it should be required)
-        if 'year' in df.columns:
-            df['year'] = df['year'].replace({np.nan: None})
+        # Convert ALL NaN values to None for PostgreSQL/Supabase compatibility
+        # Supabase is stricter about handling Python NaN values than local PostgreSQL
+        df = df.replace({np.nan: None})
         
         # Remove duplicates based on unique keys
         df = df.drop_duplicates(subset=['year', 'nta_code'], keep='last')

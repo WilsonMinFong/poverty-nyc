@@ -39,6 +39,7 @@ datasets:
     name: "Zillow Observed Rent Index (ZORI)"
     dataset_id: "zillow_zori"
     table_name: "zillow_zori"
+    enabled: true
     update_frequency: "monthly"
     config_path: "datasets/zillow_zori/config.yaml"
     transformer_class: "datasets.zillow_zori.transformer.ZillowZoriTransformer"

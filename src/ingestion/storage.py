@@ -3,7 +3,7 @@
 from typing import Dict, Any, Optional
 from pathlib import Path
 import pandas as pd
-from sqlalchemy import create_engine, text, MetaData, Table, Column, String, Integer, DateTime, Numeric, Index
+from sqlalchemy import create_engine, text, MetaData, Table, Column, String, Integer, DateTime, Numeric, Index, UniqueConstraint
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Engine
 from sqlalchemy.pool import NullPool
@@ -155,6 +155,18 @@ class DataStorage:
                 index_cols = index_def['columns']
                 schema_items.append(Index(index_name, *index_cols))
 
+        # Add constraints to table definition
+        if 'constraints' in schema:
+            for constraint in schema['constraints']:
+                # Parse UNIQUE(col1, col2, ...) format
+                constraint_upper = constraint.upper().strip()
+                if constraint_upper.startswith('UNIQUE(') and constraint_upper.endswith(')'):
+                    cols_str = constraint[7:-1]  # Extract between UNIQUE( and )
+                    cols = [c.strip() for c in cols_str.split(',')]
+                    constraint_name = f"uq_{table_name}_{'_'.join(cols)}"
+                    schema_items.append(UniqueConstraint(*cols, name=constraint_name))
+                    logger.info(f"Adding unique constraint: {constraint_name} on columns {cols}")
+
         logger.info(f"Creating table {table_name} with columns: {[c.name for c in columns]}")
 
         # Define table
@@ -168,7 +180,7 @@ class DataStorage:
         # Create table (and indexes)
         self.metadata.create_all(engine)
 
-        logger.info(f"Table {table_name} created/verified with indexes")
+        logger.info(f"Table {table_name} created/verified with indexes and constraints")
 
     def store_data(
         self,

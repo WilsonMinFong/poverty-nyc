@@ -34,6 +34,8 @@ schema:
       description: "Time of ingestion"
 
 validation:
+  allow_duplicates: false
+  unique_keys: ["zip_code"]
   rules:
     - column: "zip_code"
       rule: "not_null"

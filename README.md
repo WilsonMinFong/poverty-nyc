@@ -67,11 +67,11 @@ nyc-open-data-pipeline/
 3. **Set up PostgreSQL**:
    ```bash
    # Create database
-   createdb nyc_open_data
+   createdb poverty_nyc
    
    # Or using Docker
    docker run --name nyc-postgres \
-     -e POSTGRES_DB=nyc_open_data \
+     -e POSTGRES_DB=poverty_nyc \
      -e POSTGRES_USER=your_username \
      -e POSTGRES_PASSWORD=your_password \
      -p 5432:5432 \
@@ -89,7 +89,7 @@ nyc-open-data-pipeline/
    NYC_OPEN_DATA_API_TOKEN=your_api_token_here
    POSTGRES_HOST=localhost
    POSTGRES_PORT=5432
-   POSTGRES_DB=nyc_open_data
+   POSTGRES_DB=poverty_nyc
    POSTGRES_USER=your_username
    POSTGRES_PASSWORD=your_password
    ```
@@ -329,7 +329,7 @@ SELECT * FROM dataset_metadata;
 import pandas as pd
 from sqlalchemy import create_engine
 
-engine = create_engine('postgresql://user:password@localhost/nyc_open_data')
+engine = create_engine('postgresql://user:password@localhost/poverty_nyc')
 df = pd.read_sql('SELECT * FROM food_supply_gap', engine)
 ```
 

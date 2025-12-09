@@ -28,7 +28,7 @@ class Settings:
             database=DatabaseConfig(
                 host=os.getenv('POSTGRES_HOST', 'localhost'),
                 port=int(os.getenv('POSTGRES_PORT', '5432')),
-                database=os.getenv('POSTGRES_DB', 'nyc_open_data'),
+                database=os.getenv('POSTGRES_DB', 'poverty_nyc'),
                 user=os.getenv('POSTGRES_USER', ''),
                 password=os.getenv('POSTGRES_PASSWORD', '')
             ),

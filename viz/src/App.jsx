@@ -5,7 +5,6 @@ import ScrollyTelling from './components/ScrollyTelling';
 import ComparisonTool from './components/ComparisonTool';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const INITIAL_CENTER = [-74.006, 40.7128];
 const INITIAL_ZOOM = 11;
 
@@ -79,22 +78,22 @@ function App() {
   // Comparison Tool State
   const [isComparisonMode, setIsComparisonMode] = useState(false);
 
-  // Fetch data
+  // Fetch data from static JSON files (served by Vercel CDN)
   useEffect(() => {
     // Fetch Food Gap Data
-    fetch(`${API_BASE_URL}/api/food-gaps`)
+    fetch('/data/food-gaps.json')
       .then(res => res.json())
       .then(data => setFoodGapsData(data))
       .catch(err => console.error('Error fetching food gaps:', err));
 
     // Fetch Poverty Data
-    fetch(`${API_BASE_URL}/api/poverty-by-zip`)
+    fetch('/data/poverty-by-zip.json')
       .then(res => res.json())
       .then(data => setPovertyData(data))
       .catch(err => console.error('Error fetching poverty data:', err));
 
     // Fetch Rent Data
-    fetch(`${API_BASE_URL}/api/rent-by-zip`)
+    fetch('/data/rent-by-zip.json')
       .then(res => res.json())
       .then(data => setRentData(data))
       .catch(err => console.error('Error fetching rent data:', err));
@@ -292,23 +291,33 @@ function App() {
     };
   }, []);
 
-  // Update data sources
+  // Update data sources when data arrives or map becomes ready
   useEffect(() => {
-    if (!mapRef.current || !mapRef.current.isStyleLoaded()) return;
+    if (!mapRef.current) return;
 
-    const foodSource = mapRef.current.getSource('foodSupplyGaps');
-    if (foodSource && foodGapsData) {
-      foodSource.setData(foodGapsData);
-    }
+    const updateSources = () => {
+      const foodSource = mapRef.current.getSource('foodSupplyGaps');
+      if (foodSource && foodGapsData) {
+        foodSource.setData(foodGapsData);
+      }
 
-    const povertySource = mapRef.current.getSource('povertyData');
-    if (povertySource && povertyData) {
-      povertySource.setData(povertyData);
-    }
+      const povertySource = mapRef.current.getSource('povertyData');
+      if (povertySource && povertyData) {
+        povertySource.setData(povertyData);
+      }
 
-    const rentSource = mapRef.current.getSource('rentData');
-    if (rentSource && rentData) {
-      rentSource.setData(rentData);
+      const rentSource = mapRef.current.getSource('rentData');
+      if (rentSource && rentData) {
+        rentSource.setData(rentData);
+      }
+    };
+
+    // If style is loaded, update immediately
+    if (mapRef.current.isStyleLoaded()) {
+      updateSources();
+    } else {
+      // Otherwise, wait for style to load (handles race condition with fast static file loading)
+      mapRef.current.once('load', updateSources);
     }
   }, [foodGapsData, povertyData, rentData]);
 

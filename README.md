@@ -160,6 +160,25 @@ python scripts/ingest_data.py --dataset all
 - `--force`: Force re-download even if data exists
 - `--dry-run`: Preview data without storing
 
+### Updating Static Frontend Data
+
+The frontend uses static JSON files for faster load times (no API cold starts). To update these files after ingesting new data:
+
+```bash
+# Export data to static JSON files
+python scripts/export_static_data.py
+
+# Commit and deploy
+git add viz/public/data/
+git commit -m "Update static data"
+git push
+```
+
+This exports the following files to `viz/public/data/`:
+- `food-gaps.json` - Food supply gaps by NTA
+- `poverty-by-zip.json` - Poverty rates by ZIP code
+- `rent-by-zip.json` - Rent index by ZIP code
+
 ## Available Datasets
 
 Currently configured datasets:
